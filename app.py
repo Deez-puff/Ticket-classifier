@@ -3,7 +3,16 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import sys
-sys.path.append('src')
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent
+SRC_DIR = BASE_DIR / "src"
+DATA_DIR = BASE_DIR / "data"
+MODEL_PATH = DATA_DIR / "category_model.pkl"
+VECTORIZER_PATH = DATA_DIR / "category_vectorizer.pkl"
+
+if str(SRC_DIR) not in sys.path:
+    sys.path.insert(0, str(SRC_DIR))
 
 from preprocessor import clean_text
 from feature_extractor import create_features, split_data
@@ -16,16 +25,16 @@ st.title("🎫 Support Ticket Classification & Prioritization")
 st.markdown("Upload support tickets, train a model, and classify new tickets by category and priority.")
 st.divider()
 
-# ── Sidebar — Mode Selection ──────────────────────────────
+# Sidebar - Mode Selection
 mode = st.sidebar.radio("Choose Mode:", ["Train New Model", "Classify a Ticket"])
 
 if mode == "Train New Model":
-    st.header("Step 1 — Upload Ticket Dataset")
+    st.header("Step 1 - Upload Ticket Dataset")
     uploaded_file = st.file_uploader("Upload CSV file with ticket text and category", type=["csv"])
 
     if uploaded_file is not None:
         df = pd.read_csv(uploaded_file)
-        st.success(f"✅ Dataset loaded — {len(df)} tickets found!")
+        st.success(f"✅ Dataset loaded - {len(df)} tickets found!")
 
         with st.expander("👀 Preview Dataset"):
             st.dataframe(df.head())
@@ -55,7 +64,8 @@ if mode == "Train New Model":
             progress.progress(95, text="⏳ Evaluating...")
             results = evaluate_model(model, X_test, y_test)
 
-            save_model(model, vectorizer, "data/category_model.pkl", "data/category_vectorizer.pkl")
+            DATA_DIR.mkdir(exist_ok=True)
+            save_model(model, vectorizer, MODEL_PATH, VECTORIZER_PATH)
             progress.progress(100, text="✅ Done!")
 
             st.divider()
@@ -91,7 +101,7 @@ else:
             st.error("❌ Please enter ticket text first!")
         else:
             try:
-                model, vectorizer = load_model("data/category_model.pkl", "data/category_vectorizer.pkl")
+                model, vectorizer = load_model(MODEL_PATH, VECTORIZER_PATH)
 
                 cleaned = clean_text(ticket_text)
                 vector = vectorizer.transform([cleaned])
